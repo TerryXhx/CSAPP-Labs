@@ -6,7 +6,7 @@ My solutions to labs of CS:APP3e.
 - [x] Bomb Lab
 - [x] Attack Lab
 - [x] Cache Lab
-- [ ] Shell Lab
+- [x] Shell Lab
 - [ ] Malloc Lab
 - [ ] Proxy Lab
 
