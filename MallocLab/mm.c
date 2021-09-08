@@ -102,6 +102,7 @@ static void *place(void *bp, size_t asize);
 static void insert_to_free_list(char *bp);
 static void remove_from_free_list(char *bp);
 static char *get_listp(size_t size);
+static void printblock(char *bp);
 
 /*
  * mm_init 
@@ -239,9 +240,44 @@ void *calloc (size_t nmemb, size_t size) {
  * mm_checkheap 
  *  - Check if the heap is safe.
  */
-void mm_checkheap(int verbose) {
-	/*Get gcc to be quiet. */
-	verbose = verbose;
+void mm_checkheap(int line) {
+    printf("---------- Enter checkheap ----------\n");
+    printf("Line:\t%d\n", line);
+    printf("heap_listp:\t%p\n", heap_listp);
+
+    printf("********** Entire Heap Blocks **********\n");
+    char *bp = heap_listp;
+    int block_id = 0;
+    while (GET_SIZE(HDRP(bp))) {
+        printf("Block ID:\t%d\n", block_id++);
+        printblock(bp);
+        bp = NEXT_BLKP(bp);
+    }
+    printf("********** End Entire Heap Blocks **********\n\n");
+
+
+    printf("********** Segragated Lists **********\n");
+    for (int i = 0; i < CLASS_CNT; ++i) {
+        printf("Class:\t%d\n", i);
+        int empty_cnt = 0;
+        char *head = GET_HEAD(heap_listp + (i - CLASS_CNT - 2) * WSIZE);
+        if (!head) {
+            printf("No empty block\n");
+            continue;
+        } else {
+            printf("Empty block ID: %d\n", empty_cnt++);
+            printblock(head);
+        }
+        char *bp = GET_SUCC(bp);
+        while (bp) {
+            printf("Empty block ID: %d\n", empty_cnt++);
+            printblock(bp);
+            bp = GET_SUCC(bp);
+        }
+    }
+    printf("********** End Segerated Lists **********\n\n");
+
+    printf("---------- Quit checkheap ----------\n\n");
 }
 
 /* The remaining routines are internal helper routines */
@@ -496,4 +532,29 @@ static char *get_listp(size_t size) {
         class_id = 13;
     
     return heap_listp + (class_id - CLASS_CNT - 2) * WSIZE;
+}
+
+
+/*
+ * printblock
+ *  - Gicven block pointer bp, print the basic infomation of the block.
+ */
+static void printblock(char *bp) {
+    printf("###############\n");
+    printf("Address:\t%p\n", bp);
+
+    int size = GET_SIZE(HDRP(bp));
+    int get_alloc = GET_ALLOC(HDRP(bp));
+
+    if (get_alloc) {
+        printf("Allocated\n");
+        printf("Size:\t%d\n", size);
+    } else {
+        printf("Free\n");
+        char *succ = GET_SUCC(bp);
+        printf("Size:\t%d\n", size);
+        printf("SUCC address:\t%p\n", succ);
+    }
+
+    printf("###############\n\n");
 }
