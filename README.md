@@ -8,5 +8,5 @@ My solutions to labs of CS:APP3e.
 - [x] Cache Lab
 - [x] Shell Lab
 - [x] Malloc Lab
-- [ ] Proxy Lab
+- [x] Proxy Lab
 
