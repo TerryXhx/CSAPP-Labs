@@ -1,19 +1,21 @@
+/* Reference: https://github.com/CrazyIvanPro/ICS/tree/master/Labs/08-Proxylab */
+
 #include <stdio.h>
 #include "csapp.h"
-
-/* Recommended max cache and object sizes */
-#define MAX_CACHE_SIZE 1049000
-#define MAX_OBJECT_SIZE 102400
+#include "cache.h"
 
 /* pre-specified headers */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
 static const char *connection_hdr = "Connection: close\r\n";
 static const char *proxy_connection_hdr = "Proxy-Connection: close\r\n";
 
+/* Global variables*/
+cache_t cache;
+
 /* Function prototypes */
 void *thread(void *vargp);
 void proxy(int connfd);
-int parse_url(char *url, char *host, char *port, char *path);
+int parse_url(char *url, char *host, char *port, char *path, char *uri);
 void get_requesthdrs(char *headers, rio_t *riop, char *host, char *port, char *path);
 void clienterror(
     int fd, char *cause, char *errnum,
@@ -36,6 +38,9 @@ int main(int argc, char **argv) {
 
     /* Ignore SIGPEPE signal */
     Signal(SIGPIPE, SIG_IGN);
+
+    /* Initialize the cache */
+    cache_init(&cache);
 
     listenfd = Open_listenfd(argv[1]);
     while (1) {
@@ -70,11 +75,12 @@ void *thread(void *vargp) {
  */
 void proxy(int connfd) {
     char buf[MAXLINE], method[MAXLINE], url[MAXLINE], version[MAXLINE];
-    char host[MAXLINE], port[MAXLINE], path[MAXLINE];
+    char host[MAXLINE], port[MAXLINE], path[MAXLINE], uri[MAXLINE];
     char headers[MAXLINE];
     int clientfd;
     char object_buf[MAX_OBJECT_SIZE];
     size_t n = 0, object_size = 0;
+    int cache_line_id;
 
     /* serverrio: rio between client and proxy, proxy as a server */
     /* clientrio: rio between proxy and server, proxy as a client */
@@ -94,11 +100,22 @@ void proxy(int connfd) {
         return;
     }
 
-    if (parse_url(url, host, port, path)) {
+    if (parse_url(url, host, port, path, uri)) {
         clienterror(
             connfd, url, "502", "Parse URL Fail",
             "Proxy fails to parse the URL"
         );
+        return;
+    }
+
+    /* Try to get the response in cache */
+    if ((cache_line_id = cache_find(&cache, uri)) != -1) {
+        P_reader(&cache, cache_line_id);
+
+        char *content = cache.cache_lines[cache_line_id].content;
+        Rio_writen(connfd, content, strlen(content));
+
+        V_reader(&cache, cache_line_id);
         return;
     }
 
@@ -119,15 +136,20 @@ void proxy(int connfd) {
         if (object_size < MAX_OBJECT_SIZE)
             strcat(object_buf, buf);
     }
+
+    /* Insert the object into the cache */
+    if (object_size < MAX_OBJECT_SIZE)
+        cache_insert(&cache, uri, object_buf);
+
     Close(clientfd);
 }
 
 /*
  * parse_url
- *  - parses URL into host, port and path
+ *  - parses URL into host, port, path and uri
  *  - return 0 if parse succeeds, -1 if fails
  */
-int parse_url(char *url, char *host, char *port, char *path) {
+int parse_url(char *url, char *host, char *port, char *path, char *uri) {
     char *host_begin, *port_begin, *path_begin;
     int port_num = 80;
 
@@ -159,6 +181,8 @@ int parse_url(char *url, char *host, char *port, char *path) {
         path = "";
     }
     sprintf(port, "%d", port_num);
+
+    sprintf(uri, "%s:%s%s", host, port, path);
 
     return 0;
 }
