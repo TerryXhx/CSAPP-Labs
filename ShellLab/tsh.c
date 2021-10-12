@@ -121,7 +121,7 @@ void Sio_error(char s[]);
  * main - The shell's main routine 
  */
 int main(int argc, char **argv) {
-    char c;
+    int c;
     char cmdline[MAXLINE];
     int emit_prompt = 1; /* emit prompt (default) */
 
@@ -216,7 +216,7 @@ void eval(char *cmdline) {
             Sigprocmask(SIG_SETMASK, &prev, NULL);   /* Unblock SIGCHLD */
             Setpgid(0, 0);
             if (execve(argv[0], argv, environ) < 0) {
-                printf("%s: Command not found.\n", argv[0]);
+                printf("%s: Command not found\n", argv[0]);
                 exit(0);
             }
         }
